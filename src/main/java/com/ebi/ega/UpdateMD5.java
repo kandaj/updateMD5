@@ -1,15 +1,11 @@
 package com.ebi.ega;
 
-import javax.management.Attribute;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class UpdateMD5 {
     public void updateMD5values(HashMap fileIndex, DataSource audit) {
