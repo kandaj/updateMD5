@@ -12,77 +12,73 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class UpdateMD5 {
-    public void updateMD5values(HashMap fileIndex, DataSource audit){
+    public void updateMD5values(HashMap fileIndex, DataSource audit) {
 
         try {
             Connection conn = audit.getConnection();
             PreparedStatement selectPS = conn.prepareStatement("select * from audit_md5 where file_stable_id=? and process_step=?");
-            PreparedStatement updateQueriesPS = conn.prepareStatement("UPDATE audit_md5 set md5_checksum=?,process_step=? where file_stable_id=?");
+            PreparedStatement updateQueriesPS = conn.prepareStatement("UPDATE audit_md5 set md5_checksum=? where process_step=? and file_stable_id=?");
             PreparedStatement insertQueriesPS = conn.prepareStatement("INSERT into audit_md5 (md5_checksum,process_step,file_stable_id) VALUES(?,?,?)");
-
-
 
             for (Object key : fileIndex.keySet()) {
 
-                String fileStableID   = (String) key;
-                String unencryptedMD5 = (String) ((EGAFile)fileIndex.get(key)).unencryptedMD5;
-                String encryptedMD5   = (String) ((EGAFile)fileIndex.get(key)).encryptedMD5;
+                String fileStableID = (String) key;
+                String unencryptedMD5 = (String) ((EGAFile) fileIndex.get(key)).unencryptedMD5;
+                String encryptedMD5 = (String) ((EGAFile) fileIndex.get(key)).encryptedMD5;
+                String unencryptedText = "Submitter unencrypted md5";
+                String encryptedText = "Submitter encrypted md5";
 
-                PreparedStatement ps = null;
-
-                try {
-
-                    selectPS.setString(1,  fileStableID);
-                    selectPS.setString(2,  "Submitter unencrypted md5");
-                    ResultSet rs = selectPS.executeQuery();
-                    if(rs.next()){
-                        updateQueriesPS.setString(1,  unencryptedMD5);
-                        updateQueriesPS.setString(2,  "Submitter unencrypted md5");
-                        updateQueriesPS.setString(3,  fileStableID);
-                        updateQueriesPS.addBatch();
-                    } else {
-                        insertQueriesPS.setString(1,  unencryptedMD5);
-                        insertQueriesPS.setString(2,  "Submitter unencrypted md5");
-                        insertQueriesPS.setString(3,  fileStableID);
-                        insertQueriesPS.addBatch();
+                if(!unencryptedMD5.equals("") || !encryptedMD5.equals("")){
+                    try {
+                        selectPS.setString(1, fileStableID);
+                        selectPS.setString(2, unencryptedText);
+                        ResultSet rs = selectPS.executeQuery();
+                        if (rs.next()) {
+                            updateQueriesPS.setString(1, unencryptedMD5);
+                            updateQueriesPS.setString(2, unencryptedText);
+                            updateQueriesPS.setString(3, fileStableID);
+                            updateQueriesPS.addBatch();
+                        } else {
+                            insertQueriesPS.setString(1, unencryptedMD5);
+                            insertQueriesPS.setString(2, unencryptedText);
+                            insertQueriesPS.setString(3, fileStableID);
+                            insertQueriesPS.addBatch();
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
 
-                try {
-                    selectPS.setString(1,  fileStableID);
-                    selectPS.setString(2,  "Submitter encrypted md5");
-                    ResultSet rs = selectPS.executeQuery();
-                    if(rs.next()){
-                        updateQueriesPS.setString(1,  encryptedMD5);
-                        updateQueriesPS.setString(2,  "Submitter encrypted md5");
-                        updateQueriesPS.setString(3,  fileStableID);
-                        updateQueriesPS.addBatch();
-                    } else {
-                        insertQueriesPS.setString(1,  encryptedMD5);
-                        insertQueriesPS.setString(2,  "Submitter encrypted md5");
-                        insertQueriesPS.setString(3,  fileStableID);
-                        insertQueriesPS.addBatch();
+                    try {
+                        selectPS.setString(1, fileStableID);
+                        selectPS.setString(2, encryptedText);
+                        ResultSet rs = selectPS.executeQuery();
+                        if (rs.next()) {
+                            updateQueriesPS.setString(1, encryptedMD5);
+                            updateQueriesPS.setString(2, encryptedText);
+                            updateQueriesPS.setString(3, fileStableID);
+                            updateQueriesPS.addBatch();
+                        } else {
+                            insertQueriesPS.setString(1, encryptedMD5);
+                            insertQueriesPS.setString(2, encryptedText);
+                            insertQueriesPS.setString(3, fileStableID);
+                            insertQueriesPS.addBatch();
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                } else {
+                    System.out.println(fileStableID+ " not updated");
                 }
 
             }
 
+            try {
+                updateQueriesPS.executeBatch();
+                insertQueriesPS.executeBatch();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
 
-//
-//            try {
-//                updateQueriesPS.executeBatch();
-//                insertQueriesPS.executeBatch();
-//            } catch (SQLException e) {
-//                e.printStackTrace();
-//            }
-
-
-            System.out.println(updateQueriesPS);
-            System.out.println(insertQueriesPS);
             conn.close();
 
         } catch (SQLException e) {

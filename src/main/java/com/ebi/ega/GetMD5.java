@@ -22,7 +22,7 @@ public class GetMD5 {
     static HashMap getFileIndex(DataSource audit, DataSource erapro){
         stableIds = readInputFile();
         HashMap fileIndex = new HashMap();
-        String query = "select * from audit_file where stable_id= ?";
+        String query = "select * from audit_file where stable_id= ? and (archive_status_id =3 OR archive_status_id =101 or archive_status_id =52 or archive_status_id =6 or archive_status_id =13 or archive_status_id =50) and archive_status_id !=28";
         Connection conn = null;
         for (int i = 0; i < stableIds.size(); i++) {
             String stableID  = (String) stableIds.get(i);
@@ -93,8 +93,8 @@ public class GetMD5 {
         this.fileSource = this.getFileSource(file_name);
         this.fileAccession = fileAccession;
         this.erapro = erapro;
-        this.unencryptedMD5 = null;
-        this.encryptedMD5 = null;
+        this.unencryptedMD5 = "";
+        this.encryptedMD5 = "";
         try {
             getMD5values();
         } catch (SQLException e) {
@@ -133,31 +133,29 @@ public class GetMD5 {
          try {
              this.unencryptedMD5 =  new String(Files.readAllBytes(Paths.get(unencryptFile)));
          } catch (NoSuchFileException e) {
-             System.out.print(this.stableID+" "+unencryptFile+" not found will check in XML");
+             System.out.print(this.stableID+"\n"+unencryptFile+" not found will check in XML \n");
          }
 
          String encryptFile = this.fileSource+".gpg.md5";
          try {
-             System.out.println(encryptFile);
              this.encryptedMD5 =  new String(Files.readAllBytes(Paths.get(encryptFile)));
          } catch (NoSuchFileException e) {
-             System.out.print(" "+encryptFile+" not found will check in XML\n");
+             System.out.print(encryptFile+" not found will check in XML\n");
          }
-
-         if ((this.unencryptedMD5 == null) || (this.unencryptedMD5 == null)){
+         if ((this.unencryptedMD5.equals("")) || (this.encryptedMD5.equals(""))){
              Connection conn = this.erapro.getConnection();
              String query = null;
 
              if(this.fileAccession.substring(0, 4).equals("EGAR") ) {
-                 query = "SELECT * from ERA.RUN an,EGA.VW_RUN_FILES_XML vrx  where an.ega_id=? and vrx.RUN_ID=an.run_id AND vrx.BASE_NAME=?";
+                 query = "SELECT * from ERA.RUN an,EGA.VW_RUN_FILES_XML vrx  where an.ega_id=? and vrx.RUN_ID=an.run_id AND vrx.BASE_NAME LIKE ?";
              } else {
-                 query = "SELECT * from ERA.ANALYSIS an,EGA.VW_ANALYSIS_FILE_XML vafx  where an.ega_id=? and vafx.ANALYSIS_ID=an.analysis_id AND vafx.BASE_NAME=?";
+                 query = "SELECT * from ERA.ANALYSIS an,EGA.VW_ANALYSIS_FILE_XML vafx  where an.ega_id=? and vafx.ANALYSIS_ID=an.analysis_id AND vafx.BASE_NAME LIKE ?";
              }
 
              try {
                  PreparedStatement ps = conn.prepareStatement(query);
                  ps.setString(1,  this.fileAccession);
-                 ps.setString(2,  this.baseName);
+                 ps.setString(2,  this.baseName+"%");
                  ResultSet rs = ps.executeQuery();
                  while ( rs.next() )
                  {
@@ -179,5 +177,22 @@ public class GetMD5 {
              conn.close();
          }
 
+         String md5Regex  = "^[a-f0-9]{32}$";
+         if (!this.unencryptedMD5.matches(md5Regex) || !this.encryptedMD5.matches(md5Regex)){
+             if(this.unencryptedMD5.equals("")){
+                 System.out.println("unencrypted MD5 is null\n");
+             } else{
+                 System.out.println("unencrypted MD5 "+this.unencryptedMD5+" is not correct format\n");
+                 this.unencryptedMD5 = "";
+             }
+
+             if(this.encryptedMD5.equals("")){
+                 System.out.println("encrypted MD5 is null\n");
+             } else{
+                 System.out.println("encrypted MD5 "+this.encryptedMD5+" is not correct format\n");
+                 this.encryptedMD5 = "";
+             }
+
+         }
      }
 }
