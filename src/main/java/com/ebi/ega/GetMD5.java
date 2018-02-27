@@ -1,8 +1,5 @@
 package com.ebi.ega;
 
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-import org.springframework.stereotype.Service;
-
 import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -16,17 +13,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 
 public class GetMD5 {
     static ArrayList stableIds;
-    static TreeMap getFileIndex(DataSource audit, DataSource erapro){
+    static HashMap getFileIndex(DataSource audit, DataSource erapro){
         stableIds = readInputFile();
-        TreeMap fileIndex = new TreeMap();
+        HashMap fileIndex = new HashMap();
         String query = "select * from audit_file where stable_id= ?";
         Connection conn = null;
-        fileIndex=new TreeMap();
         for (int i = 0; i < stableIds.size(); i++) {
             String stableID  = (String) stableIds.get(i);
             try {
@@ -41,6 +38,7 @@ public class GetMD5 {
                 }
                 rs.close();
                 ps.close();
+                conn.close();
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -55,7 +53,7 @@ public class GetMD5 {
                 }
             }
         }
-        return (TreeMap) fileIndex;
+        return (HashMap) fileIndex;
     }
     static ArrayList<String> readInputFile() {
         ArrayList<String> list = new ArrayList<String>();
@@ -97,7 +95,11 @@ public class GetMD5 {
         this.erapro = erapro;
         this.unencryptedMD5 = null;
         this.encryptedMD5 = null;
-        getMD5values();
+        try {
+            getMD5values();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
     }
     public String getFileSource(String file_name) {
@@ -119,12 +121,14 @@ public class GetMD5 {
             baseName = baseNameArray[baseNameArray.length - 1];
             if(baseName.substring(baseName.length()-4).equals(".gpg")){
                 baseName = baseName.substring(0, baseName.length() - 4);
+            } else if (baseName.substring(baseName.length()-4).equals(".cip")) {
+                baseName = baseName.substring(0, baseName.length() - 4);
             }
         }
         return baseName;
     }
 
-     public void getMD5values() throws IOException {
+     public void getMD5values() throws IOException, SQLException {
          String unencryptFile = this.fileSource+".md5";
          try {
              this.unencryptedMD5 =  new String(Files.readAllBytes(Paths.get(unencryptFile)));
@@ -141,7 +145,7 @@ public class GetMD5 {
          }
 
          if ((this.unencryptedMD5 == null) || (this.unencryptedMD5 == null)){
-             Connection conn = null;
+             Connection conn = this.erapro.getConnection();
              String query = null;
 
              if(this.fileAccession.substring(0, 4).equals("EGAR") ) {
@@ -151,7 +155,6 @@ public class GetMD5 {
              }
 
              try {
-                 conn = this.erapro.getConnection();
                  PreparedStatement ps = conn.prepareStatement(query);
                  ps.setString(1,  this.fileAccession);
                  ps.setString(2,  this.baseName);
@@ -173,6 +176,7 @@ public class GetMD5 {
                      } catch (SQLException e) {}
                  }
              }
+             conn.close();
          }
 
      }

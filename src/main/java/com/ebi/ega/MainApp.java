@@ -5,6 +5,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 /**
@@ -13,7 +14,7 @@ import java.util.TreeMap;
 
 public class MainApp {
 
-	public static TreeMap fileIndex;
+	public static HashMap fileIndex;
 
 	public static void main(String[] args) {
 		ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
@@ -26,7 +27,7 @@ public class MainApp {
 
 		UpdateMD5 updateMD5 = context.getBean("updateMD5", UpdateMD5.class);
 
-		fileIndex =  getMD5.getFileIndex(audit,erapro);
+		fileIndex =  GetMD5.getFileIndex(audit,erapro);
 
 		updateMD5.updateMD5values(fileIndex,audit);
 

@@ -23,10 +23,10 @@ public class AppConfig {
     @Bean
     public DataSource audit() {
         DriverManagerDataSource audit = new DriverManagerDataSource();
-        audit.setDriverClassName(env.getRequiredProperty("audit.driverClassName"));
-        audit.setUrl(env.getRequiredProperty("audit.url"));
-        audit.setUsername(env.getRequiredProperty("audit.user"));
-        audit.setPassword(env.getRequiredProperty("audit.password"));
+        audit.setDriverClassName(env.getRequiredProperty("audit_test.driverClassName"));
+        audit.setUrl(env.getRequiredProperty("audit_test.url"));
+        audit.setUsername(env.getRequiredProperty("audit_test.user"));
+        audit.setPassword(env.getRequiredProperty("audit_test.password"));
         return audit;
     }
 
